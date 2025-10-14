@@ -44,6 +44,14 @@
             <input type="text" name="title" class="form-control"
                    value="{{ old('title', $event->title) }}" required maxlength="100">
         </div>
+        
+        <div class="mb-3">
+            <label for="category" class="form-label">Category</label>
+            <input type="text" id="category" name="category" 
+            class="form-control" 
+            value="{{ old('category', $event->category ?? '') }}" 
+            placeholder="e.g. Workshop, Conference, Meetup" required>
+        </div>
 
         <div class="mb-3">
             <label class="form-label">Description</label>

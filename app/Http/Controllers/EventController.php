@@ -10,19 +10,26 @@ use Illuminate\Support\Facades\Auth;
 class EventController extends Controller
 {
     /**
-     * List upcoming events (home page).
+     * 🏠 Home page – list upcoming events.
      */
     public function index()
     {
         $events = Event::where('event_date', '>', now())
-            ->orderBy('event_date')
+            ->orderBy('event_date', 'asc')
             ->paginate(8);
 
-        return view('home', compact('events'));
+        // Distinct categories for filters
+        $categories = Event::whereNotNull('category')
+            ->select('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
+
+        return view('home', compact('events', 'categories'));
     }
 
     /**
-     * Show a single event.
+     * 📅 Show a single event.
      */
     public function show($id)
     {
@@ -34,34 +41,106 @@ class EventController extends Controller
     }
 
     /**
-     * Book an event (attendees only).
+     * 🔎 AJAX: Filter events (category + advanced filters) with pagination.
+     */
+    public function filter(Request $request)
+    {
+        $validated = $request->validate([
+            'category'      => 'nullable|string|max:100',
+            'q'             => 'nullable|string|max:100',
+            'location'      => 'nullable|string|max:150',
+            'date_from'     => 'nullable|date',
+            'date_to'       => 'nullable|date|after_or_equal:date_from',
+            'capacity_min'  => 'nullable|integer|min:1',
+            'capacity_max'  => 'nullable|integer|min:1',
+            'sort'          => 'nullable|string|in:date_asc,date_desc,capacity_asc,capacity_desc',
+            'page'          => 'nullable|integer|min:1',
+        ]);
+
+        $query = Event::query()->where('event_date', '>', now());
+
+        // Category
+        if (!empty($validated['category']) && $validated['category'] !== 'all') {
+            $query->where('category', $validated['category']);
+        }
+
+        // Free-text search
+        if (!empty($validated['q'])) {
+            $q = trim($validated['q']);
+            $query->where(function ($qq) use ($q) {
+                $qq->where('title', 'like', "%{$q}%")
+                   ->orWhere('description', 'like', "%{$q}%");
+            });
+        }
+
+        // Location
+        if (!empty($validated['location'])) {
+            $loc = trim($validated['location']);
+            $query->where('location', 'like', "%{$loc}%");
+        }
+
+        // Date range
+        if (!empty($validated['date_from'])) {
+            $query->where('event_date', '>=', $validated['date_from']);
+        }
+        if (!empty($validated['date_to'])) {
+            $query->where('event_date', '<=', $validated['date_to']);
+        }
+
+        // Capacity range
+        if (!empty($validated['capacity_min'])) {
+            $query->where('capacity', '>=', (int) $validated['capacity_min']);
+        }
+        if (!empty($validated['capacity_max'])) {
+            $query->where('capacity', '<=', (int) $validated['capacity_max']);
+        }
+
+        // Sorting
+        switch ($validated['sort'] ?? 'date_asc') {
+            case 'date_desc':
+                $query->orderBy('event_date', 'desc');
+                break;
+            case 'capacity_asc':
+                $query->orderBy('capacity', 'asc')->orderBy('event_date', 'asc');
+                break;
+            case 'capacity_desc':
+                $query->orderBy('capacity', 'desc')->orderBy('event_date', 'asc');
+                break;
+            default:
+                $query->orderBy('event_date', 'asc');
+                break;
+        }
+
+        // ✅ Paginate for AJAX (6 per page)
+        $events = $query->paginate(6);
+
+        // Return partial view for AJAX
+        return view('partials.events-list', compact('events'));
+    }
+
+    /**
+     * 🎟️ Book an event (attendee only).
      */
     public function book($id)
     {
         $user = Auth::user();
-        if (!$user) {
-            return redirect()->route('login');
-        }
+        if (!$user) return redirect()->route('login');
 
         $event = Event::findOrFail($id);
 
-        // Organisers cannot book
-        if ($user->isOrganiser()) {
+        if ($event->event_date <= now()) {
+            return back()->with('error', 'You cannot book a past event.');
+        }
+
+        if (method_exists($user, 'isOrganiser') && $user->isOrganiser()) {
             return back()->with('error', 'Organisers cannot book events.');
         }
 
-        // Prevent double booking
-        $already = Booking::where('user_id', $user->id)
-            ->where('event_id', $event->id)
-            ->exists();
-
-        if ($already) {
+        if (Booking::where('user_id', $user->id)->where('event_id', $event->id)->exists()) {
             return back()->with('error', 'You have already booked this event.');
         }
 
-        // Capacity check
-        $current = Booking::where('event_id', $event->id)->count();
-        if ($current >= $event->capacity) {
+        if ($event->bookings()->count() >= $event->capacity) {
             return back()->with('error', 'This event is already full.');
         }
 
@@ -74,7 +153,7 @@ class EventController extends Controller
     }
 
     /**
-     * Show edit form (organiser only, must own event).
+     * ✏️ Edit event (organiser only & owner).
      */
     public function edit($id)
     {
@@ -88,7 +167,7 @@ class EventController extends Controller
     }
 
     /**
-     * Update event (organiser only, must own event).
+     * 📝 Update event.
      */
     public function update(Request $request, $id)
     {
@@ -100,6 +179,7 @@ class EventController extends Controller
 
         $validated = $request->validate([
             'title'       => 'required|string|max:100',
+            'category'    => 'required|string|max:100',
             'description' => 'nullable|string',
             'event_date'  => 'required|date|after:now',
             'location'    => 'required|string|max:255',
@@ -107,14 +187,12 @@ class EventController extends Controller
         ]);
 
         $event->update($validated);
-
-        return redirect()
-            ->route('event.show', $event->id)
+        return redirect()->route('event.show', $event->id)
             ->with('success', 'Event updated successfully.');
     }
 
     /**
-     * Delete event (organiser only, must own event, no active bookings).
+     * ❌ Delete event (only if no bookings).
      */
     public function delete($id)
     {
@@ -125,27 +203,23 @@ class EventController extends Controller
         }
 
         if ($event->bookings()->count() > 0) {
-            return redirect()
-                ->route('event.show', $id)
-                ->with('error', 'You cannot delete an event that has active bookings.');
+            return redirect()->route('event.show', $id)
+                ->with('error', 'You cannot delete an event with active bookings.');
         }
 
         $event->delete();
-
         return redirect()->route('home')->with('success', 'Event deleted successfully.');
     }
 
     /**
-     * Attendee: see my bookings.
+     * 📖 Attendee: view my bookings.
      */
     public function myBookings()
     {
         $user = Auth::user();
-        if (!$user) {
-            return redirect()->route('login');
-        }
+        if (!$user) return redirect()->route('login');
 
-        if ($user->isOrganiser()) {
+        if (method_exists($user, 'isOrganiser') && $user->isOrganiser()) {
             return redirect()->route('home')->with('error', 'Organisers cannot view attendee bookings.');
         }
 
@@ -158,7 +232,7 @@ class EventController extends Controller
     }
 
     /**
-     * Attendee: cancel my booking.
+     * 🚫 Cancel a booking (attendee only & owner).
      */
     public function cancelBooking(Booking $booking)
     {
@@ -167,19 +241,17 @@ class EventController extends Controller
         }
 
         $booking->delete();
-
-        return redirect()
-            ->route('bookings.mine')
+        return redirect()->route('bookings.mine')
             ->with('success', 'Your booking has been cancelled.');
     }
 
     /**
-     * Organiser: show event creation form.
+     * ➕ Create event form (organiser only).
      */
     public function create()
     {
         $user = Auth::user();
-        if (!$user || !$user->isOrganiser()) {
+        if (!$user || !method_exists($user, 'isOrganiser') || !$user->isOrganiser()) {
             return redirect()->route('home')->with('error', 'Only organisers can create events.');
         }
 
@@ -187,17 +259,18 @@ class EventController extends Controller
     }
 
     /**
-     * Organiser: store newly created event.
+     * 💾 Store new event.
      */
     public function store(Request $request)
     {
         $user = Auth::user();
-        if (!$user || !$user->isOrganiser()) {
+        if (!$user || !method_exists($user, 'isOrganiser') || !$user->isOrganiser()) {
             return redirect()->route('home')->with('error', 'Only organisers can create events.');
         }
 
         $validated = $request->validate([
             'title'       => 'required|string|max:100',
+            'category'    => 'required|string|max:100',
             'description' => 'nullable|string',
             'event_date'  => 'required|date|after:now',
             'location'    => 'required|string|max:255',
@@ -205,19 +278,18 @@ class EventController extends Controller
         ]);
 
         $validated['organiser_id'] = $user->id;
-
         Event::create($validated);
 
         return redirect()->route('home')->with('success', 'Event created successfully!');
     }
 
     /**
-     * Organiser dashboard: list my events + booking counts.
+     * 📊 Organiser Dashboard.
      */
     public function organiserDashboard()
     {
         $user = Auth::user();
-        if (!$user || !$user->isOrganiser()) {
+        if (!$user || !method_exists($user, 'isOrganiser') || !$user->isOrganiser()) {
             return redirect()->route('home')->with('error', 'Only organisers can access this page.');
         }
 
@@ -227,5 +299,57 @@ class EventController extends Controller
             ->get();
 
         return view('organiser.dashboard', compact('events'));
+    }
+
+    /**
+     * 👥 View attendees (organiser only).
+     */
+    public function attendees($id)
+    {
+        $event = Event::with(['bookings.user'])->findOrFail($id);
+
+        if (Auth::id() !== $event->organiser_id) {
+            return redirect()->route('home')->with('error', 'You are not authorised to view attendees for this event.');
+        }
+
+        // Provide $bookings for the Blade view
+        $bookings = $event->bookings()->with('user')->orderBy('created_at', 'asc')->get();
+
+        return view('organiser.attendees', compact('event', 'bookings'));
+    }
+
+    /**
+     * 📤 Export attendees as CSV (organiser only).
+     */
+    public function attendeesCsv($id)
+    {
+        $event = Event::with(['bookings.user'])->findOrFail($id);
+
+        if (Auth::id() !== $event->organiser_id) {
+            return redirect()->route('home')->with('error', 'You are not authorised to export attendees for this event.');
+        }
+
+        $filename = 'attendees_event_' . $event->id . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+
+        $callback = function () use ($event) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Name', 'Email', 'Booked At']);
+
+            foreach ($event->bookings as $booking) {
+                fputcsv($handle, [
+                    optional($booking->user)->name,
+                    optional($booking->user)->email,
+                    optional($booking->created_at)->format('Y-m-d H:i'),
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

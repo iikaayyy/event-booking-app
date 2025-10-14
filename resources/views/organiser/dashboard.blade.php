@@ -62,6 +62,7 @@
                             <td>
                                 <a href="{{ route('event.show', ['id' => $event->id], false) }}" class="btn btn-sm btn-outline-primary">View</a>
                                 <a href="{{ route('event.edit', ['id' => $event->id], false) }}" class="btn btn-sm btn-outline-warning">Edit</a>
+                                <a href="{{ route('organiser.attendees', ['id' => $event->id], false) }}" class="btn btn-sm btn-outline-info">Attendees</a>
                                 <form method="POST" action="{{ route('event.delete', ['id' => $event->id], false) }}" class="d-inline" onsubmit="return confirm('Delete this event?');">
                                     @csrf
                                     @method('DELETE')
