@@ -1,0 +1,23 @@
+[90m= [39m[34;4mIlluminate\Database\Eloquent\Collection[39;24m {#5911
+    [34mall[39m: [
+      [34;4mApp\Models\User[39;24m {#5913
+        [34mid[39m: [35m1[39m,
+        [34mname[39m: "[32mAlice Organizer[39m",
+        [34memail[39m: "[32malice@eventapp.com[39m",
+        [34mrole[39m: "[32morganiser[39m",
+      },
+      [34;4mApp\Models\User[39;24m {#5914
+        [34mid[39m: [35m2[39m,
+        [34mname[39m: "[32mBob Organizer[39m",
+        [34memail[39m: "[32mbob@eventapp.com[39m",
+        [34mrole[39m: "[32morganiser[39m",
+      },
+      [34;4mApp\Models\User[39;24m {#5915
+        [34mid[39m: [35m3[39m,
+        [34mname[39m: "[32mCharlie Attendee[39m",
+        [34memail[39m: "[32mcharlie@eventapp.com[39m",
+        [34mrole[39m: "[32mattendee[39m",
+      },
+    ],
+  }
+

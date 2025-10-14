@@ -1,0 +1,14 @@
+[90m= [39m[34;4mApp\Models\Event[39;24m {#5268
+    [34mtitle[39m: "[32mTech Summit 2025[39m",
+    [34mdescription[39m: "[32mA hands-on workshop for developers and designers.[39m",
+    [34mevent_date[39m: [34;4mIlluminate\Support\Carbon @1761106170[39;24m {#5189
+      [34mdate[39m: [36m2025-10-22 04:09:30.517727 UTC (+00:00)[39m,
+    },
+    [34mlocation[39m: "[32mBrisbane Convention & Exhibition Centre[39m",
+    [34mcapacity[39m: [35m150[39m,
+    [34morganiser_id[39m: [35m1[39m,
+    [34mupdated_at[39m: "[32m2025-10-12 04:09:30[39m",
+    [34mcreated_at[39m: "[32m2025-10-12 04:09:30[39m",
+    [34mid[39m: [35m1[39m,
+  }
+
