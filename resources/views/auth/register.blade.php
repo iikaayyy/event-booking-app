@@ -85,6 +85,16 @@
                         </div>
 
                         {{-- Your migration sets role default to "attendee", so no role picker needed --}}
+                        
+                        <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="termsCheck" name="terms" required>
+                    <label class="form-check-label" for="termsCheck">
+                      I agree to the 
+                    <a href="{{ route('terms') }}" target="_blank">Terms of Use</a> 
+                     and 
+                    <a href="{{ route('privacy') }}" target="_blank">Privacy Policy</a>.
+                    </label>
+                    </div>
 
                         <button type="submit" class="btn btn-primary w-100">Register</button>
                     </form>

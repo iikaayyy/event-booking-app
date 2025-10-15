@@ -29,7 +29,7 @@ class EventController extends Controller
     }
 
     /**
-     * 📅 Show a single event.
+     * 📅 Show a single event + related events in same category.
      */
     public function show($id)
     {
@@ -37,7 +37,15 @@ class EventController extends Controller
             ->withCount('bookings')
             ->findOrFail($id);
 
-        return view('event.show', compact('event'));
+        // 🧠 Related events (same category, exclude current, upcoming only)
+        $relatedEvents = Event::where('category', $event->category)
+            ->where('id', '!=', $event->id)
+            ->where('event_date', '>', now())
+            ->orderBy('event_date', 'asc')
+            ->take(3)
+            ->get();
+
+        return view('event.show', compact('event', 'relatedEvents'));
     }
 
     /**
@@ -69,7 +77,7 @@ class EventController extends Controller
             $q = trim($validated['q']);
             $query->where(function ($qq) use ($q) {
                 $qq->where('title', 'like', "%{$q}%")
-                   ->orWhere('description', 'like', "%{$q}%");
+                    ->orWhere('description', 'like', "%{$q}%");
             });
         }
 
@@ -124,7 +132,9 @@ class EventController extends Controller
     public function book($id)
     {
         $user = Auth::user();
-        if (!$user) return redirect()->route('login');
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
         $event = Event::findOrFail($id);
 
@@ -187,7 +197,9 @@ class EventController extends Controller
         ]);
 
         $event->update($validated);
-        return redirect()->route('event.show', $event->id)
+
+        return redirect()
+            ->route('event.show', $event->id)
             ->with('success', 'Event updated successfully.');
     }
 
@@ -203,12 +215,16 @@ class EventController extends Controller
         }
 
         if ($event->bookings()->count() > 0) {
-            return redirect()->route('event.show', $id)
+            return redirect()
+                ->route('event.show', $id)
                 ->with('error', 'You cannot delete an event with active bookings.');
         }
 
         $event->delete();
-        return redirect()->route('home')->with('success', 'Event deleted successfully.');
+
+        return redirect()
+            ->route('home')
+            ->with('success', 'Event deleted successfully.');
     }
 
     /**
@@ -217,7 +233,9 @@ class EventController extends Controller
     public function myBookings()
     {
         $user = Auth::user();
-        if (!$user) return redirect()->route('login');
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
         if (method_exists($user, 'isOrganiser') && $user->isOrganiser()) {
             return redirect()->route('home')->with('error', 'Organisers cannot view attendee bookings.');
@@ -241,7 +259,9 @@ class EventController extends Controller
         }
 
         $booking->delete();
-        return redirect()->route('bookings.mine')
+
+        return redirect()
+            ->route('bookings.mine')
             ->with('success', 'Your booking has been cancelled.');
     }
 
@@ -277,10 +297,15 @@ class EventController extends Controller
             'capacity'    => 'required|integer|min:1|max:1000',
         ]);
 
+        // ✅ Always tie the new event to the logged-in organiser
         $validated['organiser_id'] = $user->id;
+
         Event::create($validated);
 
-        return redirect()->route('home')->with('success', 'Event created successfully!');
+        // Nice UX: land organisers on their dashboard after creating
+        return redirect()
+            ->route('organiser.dashboard')
+            ->with('success', 'Event created successfully!');
     }
 
     /**
@@ -312,7 +337,6 @@ class EventController extends Controller
             return redirect()->route('home')->with('error', 'You are not authorised to view attendees for this event.');
         }
 
-        // Provide $bookings for the Blade view
         $bookings = $event->bookings()->with('user')->orderBy('created_at', 'asc')->get();
 
         return view('organiser.attendees', compact('event', 'bookings'));

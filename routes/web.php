@@ -101,3 +101,7 @@ Route::get('/dashboard', function () {
 
 // 🔐 Authentication (Login, Register, Forgot Password)
 require __DIR__ . '/auth.php';
+
+// 📜 Legal Pages
+Route::view('/terms', 'static.terms')->name('terms');
+Route::view('/privacy', 'static.privacy')->name('privacy');

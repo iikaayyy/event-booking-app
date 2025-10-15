@@ -95,6 +95,33 @@
             @endauth
         </div>
     </div>
+    @if(isset($relatedEvents) && $relatedEvents->isNotEmpty())
+    <hr class="my-5">
+    <h3 class="text-primary mb-3">🎯 Related Events in {{ $event->category }}</h3>
+
+    <div class="row">
+        @foreach($relatedEvents as $related)
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">{{ $related->title }}</h5>
+                        <p class="text-muted mb-2">
+                            {{ \Carbon\Carbon::parse($related->event_date)->format('F j, Y, g:i a') }}
+                        </p>
+                        <p class="text-muted mb-3">
+                            📍 {{ $related->location }}
+                        </p>
+                        <a href="{{ route('event.show', ['id' => $related->id], false) }}"
+                           class="btn btn-outline-primary w-100">
+                            View Event
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+@endif
+
 </div>
 
 </body>

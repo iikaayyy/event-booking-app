@@ -1,53 +1,100 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🎟️ Event Booking Application (Laravel 10)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A full-featured Laravel application for browsing, creating, and booking events.  
+Supports **Guests**, **Attendees**, and **Organisers**, with role-based access, dashboards, bookings, categories, CSV export, and a comprehensive automated test suite.
 
-## About Laravel
+> ✅ Current status: **All 47 tests passing**.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 📚 Table of Contents
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Requirements](#-requirements)
+- [Quick Start (TL;DR)](#-quick-start-tldr)
+- [Full Setup Instructions](#-full-setup-instructions)
+- [Environment Templates](#-environment-templates)
+- [Seeded Test Accounts](#-seeded-test-accounts)
+- [Run & Build](#-run--build)
+- [Testing](#-testing)
+- [Common Tasks](#-common-tasks)
+- [Troubleshooting](#-troubleshooting)
+- [Git: Add & Push README](#-git-add--push-readme)
+- [Author](#-author)
+- [License](#-license)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🚀 Features
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 👥 Roles
+- **Guest**: Browse upcoming events.
+- **Attendee**: Register/login, book events, view/cancel bookings.
+- **Organiser**: Create, edit, delete events; view attendees; export CSV.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 🎯 Core
+- Laravel Breeze auth (register/login/logout, email verification, password reset).
+- Event CRUD with capacity, category, date, and location.
+- Booking rules (no duplicate, no over-capacity, no past events).
+- Filtering, search, pagination, and category views.
+- Organiser dashboard with attendee list & CSV export.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 🧪 Tests
+- Authentication & registration
+- Event CRUD & filtering
+- Booking workflows
+- Guest restrictions
+- Organiser dashboard
+- Profile & password management
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+## 🧰 Tech Stack
 
-### Premium Partners
+| Category | Technology |
+|---------:|------------|
+| Backend  | Laravel 10 (PHP 8.1+) |
+| Database | SQLite (dev/test) |
+| Frontend | Blade + Bootstrap 5 |
+| Auth     | Laravel Breeze |
+| Tests    | PHPUnit + Laravel testing utilities |
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+---
+
+## ✅ Requirements
+- **PHP** 8.1+ (with `pdo_sqlite`, `openssl`, `mbstring`, `tokenizer`, `xml`, `ctype`, `json`)
+- **Composer** 2.x
+- **Node.js** 18+ and **npm** 9+
+- (Optional) Mailpit for local mail testing
+
+---
+
+## ⚡ Quick Start (TL;DR)
+
+```bash
+# 0) Clone and enter the project
+git clone https://github.com/<your-username>/event-booking-app.git
+cd event-booking-app
+
+# 1) Install deps
+composer install
+npm install
+npm run build
+
+# 2) Make .env and set SQLite path
+cp .env.example .env
+php artisan key:generate
+# (Ensure DB points to the .sqlite file; see "Environment Templates" below)
+
+# 3) Create SQLite file (if missing)
+mkdir -p database
+touch database/database.sqlite
+
+# 4) Fresh DB + seed users & events
+php artisan migrate:fresh --seed
+
+# 5) Run the server
+php artisan serve --host=0.0.0.0 --port=8000
 
 ## Contributing
 
